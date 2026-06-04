@@ -18,6 +18,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Obsidian
+.obsidian/
+
 # Model weights (too large for git)
 *.bin
 *.safetensors

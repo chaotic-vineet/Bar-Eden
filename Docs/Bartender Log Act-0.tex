@@ -1,0 +1,295 @@
+% =====================================================================
+%  Bartender Log Act-0
+%
+%  A running log of the work, the resources, and the reasoning.
+%  Fill the sections marked  % >>> YOUR WORDS  with your own commentary.
+%  Compile with pdflatex (run twice for the table of contents / refs).
+% =====================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+% ---- encoding & fonts ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% ---- page geometry ----
+\usepackage[a4paper, margin=1in]{geometry}
+
+% ---- math ----
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}          % \coloneqq, \DeclarePairedDelimiter, etc.
+
+% ---- typography ----
+\usepackage{microtype}
+\usepackage{parskip}            % block paragraphs (no indent, small vspace)
+
+% ---- lists ----
+\usepackage{enumitem}
+
+% ---- colour & code ----
+\usepackage{xcolor}
+\usepackage{listings}
+
+% ---- hyperlinks (load last) ----
+\usepackage[colorlinks=true, linkcolor=black, urlcolor=teal, citecolor=teal]{hyperref}
+
+% ---- code style ----
+\definecolor{codebg}{gray}{0.96}
+\definecolor{codecomment}{gray}{0.45}
+\lstdefinestyle{py}{%
+  language=Python,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  commentstyle=\color{codecomment}\itshape,
+  keywordstyle=\color{teal},
+  showstringspaces=false,
+  breaklines=true,
+  frame=none,
+  numbers=none,
+  xleftmargin=1em,
+  aboveskip=1em,
+  belowskip=1em,
+}
+\lstset{style=py}
+
+% ---- math shorthands ----
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclareMathOperator{\Softmax}{softmax}
+\DeclareMathOperator{\DKL}{D_{KL}}
+
+% ---- title block ----
+\title{\textbf{Bartender Log Act-0}}
+\author{Ody}
+\date{Summer 2026}
+
+% =====================================================================
+\begin{document}
+% =====================================================================
+
+\maketitle
+\tableofcontents
+
+\bigskip
+\hrule
+\bigskip
+
+% =====================================================================
+\section{Premise}
+\label{sec:premise}
+% =====================================================================
+
+A door, the user opens it to find a bar table (long, L-shaped), the barkeep is there polishing the glasses, a few other customers are there and an older lady is also there at the end of the L-shape (the far side). The user sits down, orders a drink and starts talking to the lady.
+The lady --- Mara --- is the AI I want to build. The other people are UI fodder, handled by Claude or similar. Mara does not need to be groundbreaking; she just needs to hold her persona. That is Phase~1.
+
+Phase~2 will give Mara a working memory. Phase~3 will be final touch-ups.
+
+
+% =====================================================================
+\section{Resources}
+\label{sec:resources}
+% =====================================================================
+
+\begin{itemize}[leftmargin=1.5em, itemsep=0.3em]
+  \item \textbf{NumPy\,/\,PyTorch documentation} \textemdash{}
+        \textit{Went through the numpy and pytorch documentation to understand the functions, classes and specific rules. Broadcasting was tricky but once it clicked, it was pretty good.}
+\end{itemize}
+
+% =====================================================================
+\section{Approach}
+\label{sec:approach}
+% =====================================================================
+
+For Act-0, I first did what my assignment told me to. Getting used to Numpy and implementing softmax, cross-entropy. But I noticed I needed to go back to Claude again and again. I'd get stuck on python. Not the modules or the functions. So I changed gears. Asked Claude to generate some problem sets that would make me fluent not only in implementing the ideas in my mind but also in making those implementations pythonic. Using comprehensions, zip, maps and lambda functions. Then I would recreate everything I did the previous day from memory. Change the code to see what worked and what could be better.
+
+% =====================================================================
+\section{The Mathematics, Made to Run}
+\label{sec:mathematics}
+% =====================================================================
+
+The core of Act~0 was turning math I knew on paper into code that
+executes.
+Each subsection states the object, the formula, the one subtlety that
+mattered in code, and a note on where it reappears in the project.
+
+% ---------------------------------------------------------------------
+\subsection{Softmax}
+\label{subsec:softmax}
+% ---------------------------------------------------------------------
+
+Given a vector of logits $x \in \R^{n}$, softmax produces a probability
+distribution:
+\[
+  \Softmax(x)_{i} \;=\; \frac{e^{x_{i}}}{\displaystyle\sum_{j=1}^{n} e^{x_{j}}}.
+\]
+
+\paragraph{The subtlety.}
+For numerical stability we subtract the maximum before exponentiating:
+\[
+  \Softmax(x)_{i} \;=\;
+  \frac{e^{\,x_{i} - m}}{\displaystyle\sum_{j} e^{\,x_{j} - m}},
+  \qquad m = \max_{k}\, x_{k}.
+\]
+This leaves the result unchanged \textemdash{} the factor $e^{-m}$ cancels in
+numerator and denominator \textemdash{} but prevents overflow when any $x_{i}$ is large.
+
+At first I didn't understand why I had to subtract the maximum. And the harder part was making sure the implementation was clean.
+
+\medskip
+\noindent\emph{Where it reappears in Mara:} inside every attention head, and
+in the final sampling step that turns logits into a next-token distribution.
+
+% ---------------------------------------------------------------------
+\subsection{Cross-Entropy}
+\label{subsec:cross-entropy}
+% ---------------------------------------------------------------------
+
+For a true distribution $p$ and a predicted distribution $q$,
+\[
+  H(p,\, q) \;=\; -\sum_{i} p_{i} \log q_{i}.
+\]
+In classification $p$ is one-hot at the correct class $c$, so the sum
+collapses to a single term:
+\[
+  H(p,\, q) \;=\; -\log q_{c}.
+\]
+The result is a measure of \emph{surprise}: zero when the model is certain
+and correct, unbounded as $q_{c} \to 0$.
+
+This was pretty simple but at the same time, I learnt a new method, numpy.clip. Making sure that log(0) doesn't occur.
+
+\medskip
+\noindent\emph{Where it reappears:} the training signal for every model in
+Act~1 onward.
+
+% ---------------------------------------------------------------------
+\subsection{Entropy}
+\label{subsec:entropy}
+% ---------------------------------------------------------------------
+
+The average surprise of a distribution with itself:
+\[
+  H(p) \;=\; -\sum_{i} p_{i} \log p_{i},
+\]
+with the convention $0 \log 0 \coloneqq 0$.
+Maximal for the uniform distribution, zero for a point mass.
+
+At first I didn't understand the need for entropy. Until I connected it to cross-entropy and understood why it's called \textit{cross}-entropy.
+
+\medskip
+\noindent\emph{Where it reappears:} the intuition behind sampling
+temperature \textemdash{} low temperature lowers entropy, making Mara more
+predictable.
+
+% ---------------------------------------------------------------------
+\subsection{KL Divergence}
+\label{subsec:kl-divergence}
+% ---------------------------------------------------------------------
+
+How far an approximating distribution $q$ sits from a reference $p$:
+\[
+  \DKL(p \,\|\, q) \;=\; \sum_{i} p_{i} \log \frac{p_{i}}{q_{i}}.
+\]
+It is zero if and only if $p = q$, and is \emph{not} symmetric:
+$\DKL(p \,\|\, q) \neq \DKL(q \,\|\, p)$ in general.
+
+I thought it was the easiest but my intuition proved to be wrong. I implemented KL Divergence both on paper with a pen first as well as using python. Only then did I understand what it actually is. I'm still not completely solid on the need for this but with time, I'm sure I'll understand it.
+
+\medskip
+\noindent\emph{Where it reappears:} the penalty that keeps an RLHF-tuned
+model from drifting too far from its base \textemdash{} relevant to Act~2's alignment work.
+
+% ---------------------------------------------------------------------
+\subsection{Bayes' Theorem}
+\label{subsec:bayes}
+% ---------------------------------------------------------------------
+
+\[
+  P(A \mid B) \;=\; \frac{P(B \mid A)\, P(A)}{P(B)}.
+\]
+The denominator $P(B)$ is the normalizer that makes the posterior a valid
+probability distribution.
+
+As an M.Sc. Maths student at BITS, I've used Bayes' theorem more times than I can count. But I never thought I'd end up coding it one day and the need for it either. This was easy but surprising
+
+% ---------------------------------------------------------------------
+\subsection{Numerical Differentiation}
+\label{subsec:numerical-diff}
+% ---------------------------------------------------------------------
+
+The centered finite-difference estimate of a derivative:
+\[
+  f'(x) \;\approx\; \frac{f(x+h) - f(x-h)}{2h}.
+\]
+More accurate than the one-sided version; the tool you use to
+\emph{check} an analytic gradient.
+
+This was pretty easy to implement and it's fairly straightforward as well.
+
+% ---------------------------------------------------------------------
+\subsection{The Chain Rule}
+\label{subsec:chain-rule}
+% ---------------------------------------------------------------------
+
+For $h(x) = f\bigl(g(x)\bigr)$,
+\[
+  h'(x) \;=\; f'\!\bigl(g(x)\bigr)\cdot g'(x).
+\]
+Worked example, $h(x) = \sin(x^{2})$:
+\[
+  h'(x) \;=\; \cos(x^{2})\cdot 2x.
+\]
+
+Understanding chain-rule and implementing it are two different things and this made me understand it. I implemented a simple model here but having to implement it for a general composite function? Boy that came as a real sucker-punch out of nowhere.
+
+% ---------------------------------------------------------------------
+\subsection{Gradient Descent}
+\label{subsec:gradient-descent}
+% ---------------------------------------------------------------------
+
+The update rule that minimizes a loss $L$ over parameters $\theta$:
+\[
+  \theta \;\leftarrow\; \theta - \alpha\,\nabla_{\!\theta}\, L(\theta),
+\]
+with learning rate $\alpha > 0$.
+Tested on $f(x) = (x-3)^{2}$, which descends to its minimum at $x = 3$.
+
+This was my first encounter with gradient~descent and it was real. It's pretty intuitive and multivariable calculus I did in my first semester only sharpened my intuition.
+
+% ---------------------------------------------------------------------
+\subsection{Autograd}
+\label{subsec:autograd}
+% ---------------------------------------------------------------------
+
+Everything above, computed by hand, is what PyTorch's autograd performs
+automatically: it builds a computation graph during the forward pass and
+propagates gradients backward on \texttt{.backward()}.
+The exercise was to confirm that autograd reproduces the hand-derived
+gradients \textemdash{} the verification \emph{is} the lesson.
+
+Autograd is a life-saver and I trust it with my code. Only until I can debug it properly.
+
+% =====================================================================
+\section{Checkpoint Reflection}
+\label{sec:checkpoint}
+% =====================================================================
+
+
+\begin{description}[leftmargin=0em, style=nextline]
+  \item[Where did translating math to code surprise you?]\hfill\\
+        KL divergence surprised me the most and I have to say, still a bit like magic to me.
+  \item[Where did code make something clearer than pen-and-paper?]\hfill\\
+        Definitely gradient-descent. Seeing the gradient change through hundreds and thousands of times definitely cleared any doubts I had.
+  \item[Where did your intuitions break?]\hfill\\
+        KL divergence.
+\end{description}
+
+\bigskip
+\hrule
+\bigskip
+
+\noindent\small\textit{End of Act~0.\quad Act~1 \textemdash{} The Engine \textemdash{} begins with the bigram model.}
+
+\end{document}

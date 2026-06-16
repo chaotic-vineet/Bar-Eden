@@ -1,3 +1,4 @@
+
 # The Barkeep Protocol — Resources
 
 Organized by act. Work through in order; each resource sits where it's needed.

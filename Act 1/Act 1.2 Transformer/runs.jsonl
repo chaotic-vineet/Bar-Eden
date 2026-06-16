@@ -1,0 +1,12 @@
+{"type": "config", "run_name": "Optimized Transformer", "num_params": 46950, "lr_start": 0.5, "lr_end": 0.01, "iterations": 30000, "log_interval": 3000, "warmup_steps": 1000, "batch_size": 4096, "log_path": "runs.jsonl", "max_norm": 1, "beta_1": 0.9, "beta_2": 0.99, "epsilon": 1e-08, "decay_coeff": 0.1, "vocab_dim": 28, "embedding_dim": 30, "context_size": 10, "dim_qk": 10, "dim_v": 20, "num_heads": 5, "ffn_dim": 100, "n_blocks": 3}
+{"type": "config", "run_name": "Optimized Transformer", "num_params": 46950, "lr_start": 0.003, "lr_end": 0.0003, "iterations": 30000, "log_interval": 3000, "warmup_steps": 1000, "batch_size": 4096, "log_path": "runs.jsonl", "max_norm": 1, "beta_1": 0.9, "beta_2": 0.99, "epsilon": 1e-08, "decay_coeff": 0.1, "vocab_dim": 28, "embedding_dim": 30, "context_size": 10, "dim_qk": 10, "dim_v": 20, "num_heads": 5, "ffn_dim": 100, "n_blocks": 3}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 3000, "train_loss": 2.0660290718078613, "dev_loss": 2.0327420234680176, "lr": 0.002968437750208617}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 6000, "train_loss": 2.0446369647979736, "dev_loss": 2.0145211219787598, "lr": 0.0028067571878262454}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 9000, "train_loss": 2.0256009101867676, "dev_loss": 2.015915870666504, "lr": 0.0025239714844554673}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 12000, "train_loss": 2.0296342372894287, "dev_loss": 2.0154035091400146, "lr": 0.002149686509708885}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 15000, "train_loss": 2.0107109546661377, "dev_loss": 2.013122797012329, "lr": 0.0017230875265903138}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 18000, "train_loss": 2.0021252632141113, "dev_loss": 2.014272451400757, "lr": 0.001288836742985552}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 21000, "train_loss": 2.010599136352539, "dev_loss": 2.0000503063201904, "lr": 0.000892397461760784}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 24000, "train_loss": 2.005906820297241, "dev_loss": 2.0080578327178955, "lr": 0.0005752743612973809}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 27000, "train_loss": 2.008364677429199, "dev_loss": 2.0028955936431885, "lr": 0.0003706682189032167}
+{"type": "metric", "run_name": "Optimized Transformer", "step": 30000, "train_loss": 2.0068259239196777, "dev_loss": 2.007962226867676, "lr": 0.0003}

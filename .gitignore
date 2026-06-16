@@ -18,12 +18,14 @@ env/
 .DS_Store
 Thumbs.db
 
-# Obsidian
-.obsidian/
-
 # Model weights (too large for git)
 *.bin
 *.safetensors
 *.pt
 *.pth
 scratch/
+
+# Obsidian
+.obsidian/
+/Templates/
+/Daily Notes/

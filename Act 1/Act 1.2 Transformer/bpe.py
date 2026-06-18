@@ -73,3 +73,10 @@ class ByteBPE:
 
             self.vocab[rule] = self.vocab[pair[0]] + self.vocab[pair[1]]
             self.merges[pair] = rule
+
+    def encode_chunks(self, text, chunk_size=10000):
+        results = []
+        for i in range(0, len(text), chunk_size):
+            chunk = text[i:i + chunk_size]
+            results.extend(self.encode(chunk))
+        return results

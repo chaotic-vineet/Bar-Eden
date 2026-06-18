@@ -1,0 +1,48 @@
+import os.path
+
+import torch
+from bpe import ByteBPE
+
+def make_wiki_dataset(
+        data_dir,
+        device,
+        context_size=256,
+        vocab_size=3000,
+        seed=42
+):
+    train = open(os.path.join(data_dir, "wiki.train.raw"), "r", encoding="utf-8").read()
+    dev = open(os.path.join(data_dir, "wiki.valid.raw"), "r", encoding="utf-8").read()
+    test = open(os.path.join(data_dir, "wiki.test.raw"), "r", encoding="utf-8").read()
+
+    split = {"train": train, "dev": dev, "test": test}
+
+    BPE = ByteBPE()
+
+    bpe_path = os.path.join(data_dir, "bpe.json")
+
+    if os.path.exists(bpe_path):
+        BPE.load(bpe_path)
+    else:
+        BPE.train(text=train, vocab_size=vocab_size)
+        BPE.save(bpe_path)
+
+    def make_chunks(ids, context_size):
+        for i in range(0, len(ids), context_size):
+            if len(ids[i:i + context_size+1]) < context_size+1:
+                continue
+            yield ids[i:i + context_size+1]
+
+    encoded_split = {}
+    for name, text in split.items():
+        ids = BPE.encode_chunks(text)
+        chunks = list(make_chunks(ids, context_size))
+
+        inputs  = [chunk[:-1] for chunk in chunks]
+        targets = [chunk[1:] for chunk in chunks]
+
+        inputs  = torch.tensor(inputs, dtype=torch.long, device=device)
+        targets = torch.tensor(targets, dtype=torch.long, device=device)
+
+        encoded_split[name] = (inputs, targets)
+
+    return encoded_split

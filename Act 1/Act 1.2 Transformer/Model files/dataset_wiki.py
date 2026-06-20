@@ -3,12 +3,19 @@ import os.path
 import torch
 from bpe import ByteBPE
 
+class WikiDataset:
+    def __init__(self, inputs, targets):
+        self.inputs = inputs
+        self.targets = targets
+        self.pad_idx = -1  # no padding in WikiText-2
+
+
 def make_wiki_dataset(
         data_dir,
         device,
-        context_size=256,
-        vocab_size=3000,
-        seed=42
+        context_size,
+        vocab_size,
+        seed
 ):
     train = open(os.path.join(data_dir, "wiki.train.raw"), "r", encoding="utf-8").read()
     dev = open(os.path.join(data_dir, "wiki.valid.raw"), "r", encoding="utf-8").read()
@@ -43,6 +50,8 @@ def make_wiki_dataset(
         inputs  = torch.tensor(inputs, dtype=torch.long, device=device)
         targets = torch.tensor(targets, dtype=torch.long, device=device)
 
-        encoded_split[name] = (inputs, targets)
+        encoded_split[name] = WikiDataset(inputs, targets)
+
+    encoded_split["vocab_size"] = vocab_size
 
     return encoded_split

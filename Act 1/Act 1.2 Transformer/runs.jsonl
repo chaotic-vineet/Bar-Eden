@@ -10,3 +10,15 @@
 {"type": "metric", "run_name": "Optimized Transformer", "step": 24000, "train_loss": 2.005906820297241, "dev_loss": 2.0080578327178955, "lr": 0.0005752743612973809}
 {"type": "metric", "run_name": "Optimized Transformer", "step": 27000, "train_loss": 2.008364677429199, "dev_loss": 2.0028955936431885, "lr": 0.0003706682189032167}
 {"type": "metric", "run_name": "Optimized Transformer", "step": 30000, "train_loss": 2.0068259239196777, "dev_loss": 2.007962226867676, "lr": 0.0003}
+
+{"type": "config", "run_name": "Wikitext Transformer", "num_params": 1142528, "lr_start": 0.003, "lr_end": 0.0003, "iterations": 5000, "log_interval": 500, "warmup_steps": 500, "batch_size": 128, "log_path": "runs.jsonl", "max_norm": 1, "beta_1": 0.9, "beta_2": 0.99, "epsilon": 1e-08, "decay_coeff": 0.1, "vocab_dim": 3000, "embedding_dim": 128, "context_size": 256, "dim_qk": 16, "dim_v": 32, "num_heads": 4, "ffn_dim": 512, "n_blocks": 4}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 500, "train_loss": 5.313125133514404, "dev_loss": 5.267867565155029, "lr": 0.003}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 1000, "train_loss": 4.939326286315918, "dev_loss": 4.898159980773926, "lr": 0.0029185850380609763}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 1500, "train_loss": 4.7962751388549805, "dev_loss": 4.809911727905273, "lr": 0.0026841599982106203}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 2000, "train_loss": 4.683774471282959, "dev_loss": 4.674997329711914, "lr": 0.002325}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 2500, "train_loss": 4.594446659088135, "dev_loss": 4.564417839050293, "lr": 0.0018844250398503562}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 3000, "train_loss": 4.5568766593933105, "dev_loss": 4.544529438018799, "lr": 0.001415574960149644}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 3500, "train_loss": 4.531074047088623, "dev_loss": 4.571496963500977, "lr": 0.0009750000000000004}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 4000, "train_loss": 4.437528610229492, "dev_loss": 4.495633125305176, "lr": 0.0006158400017893798}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 4500, "train_loss": 4.460784912109375, "dev_loss": 4.447774887084961, "lr": 0.0003814149619390237}
+{"type": "metric", "run_name": "Wikitext Transformer", "step": 5000, "train_loss": 4.4629621505737305, "dev_loss": 4.502478122711182, "lr": 0.0003}

@@ -1,7 +1,7 @@
 import os.path
 
 import torch
-from bpe import ByteBPE
+from .bpe import ByteBPE
 
 class WikiDataset:
     def __init__(self, inputs, targets):

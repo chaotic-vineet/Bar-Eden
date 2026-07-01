@@ -29,3 +29,11 @@ scratch/
 .obsidian/
 /Templates/
 /Daily Notes/
+
+# Misc
+*.egg-info/
+.vscode/settings.json
+
+# Datasets
+Datasets/
+

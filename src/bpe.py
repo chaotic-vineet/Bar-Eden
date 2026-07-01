@@ -1,82 +1,128 @@
+from collections import Counter
+from collections import defaultdict
+import regex as re
 import json
+
+SPLIT_PATTERN = re.compile(r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+""")
+
+def pair_freqs(seq:list, counts:dict, weight: int, pairs_in_seq: dict) -> None:
+    for pair in zip(seq, seq[1:]):
+        counts[pair] = counts.get(pair, 0) + weight
+        pairs_in_seq[pair].add(seq)
+
+def merge_pair(seq: tuple, pair: tuple, replacement: int) -> list:
+    merged = []
+    
+    i=0
+    while i < len(seq):
+        if i < len(seq)-1 and (seq[i], seq[i+1]) == pair:
+            merged.append(replacement)
+            i += 2
+        else:
+            merged.append(seq[i])
+            i += 1
+    
+    return merged
 
 class ByteBPE:
     def __init__(self):
-        self.vocab = {i: bytes([i]) for i in range(256)}
+        self.vocab  = {idx: bytes([idx]) for idx in range(256)}
         self.merges = {}
+        self._encode_cache = {}
 
-    def train(self, text, vocab_size):
-        bytes_text = list(text.encode('utf-8'))
+    def train(self, text: str, vocab_size: int) -> None:       
+        unique_chunks = Counter(
+            tuple(chunk.encode('utf-8')) for chunk in re.findall(SPLIT_PATTERN, text)
+        )
+
+        full_pair_freqs = {}
+        pair_to_chunks = defaultdict(set)
+         
+        for chunk, weight in unique_chunks.items():
+            pair_freqs(seq=chunk, counts=full_pair_freqs, weight=weight, pairs_in_seq=pair_to_chunks)
 
         while len(self.vocab) < vocab_size:
-            pairs = list(zip(bytes_text, bytes_text[1:]))
-            counts = {}
+            most_freq_pair = max(full_pair_freqs, key=full_pair_freqs.get)
+            new_token_id   = len(self.vocab)
 
-            for pair in pairs:
-                counts[pair] = counts.get(pair, 0) + 1
-            max_pair = max(counts, key=counts.get)
-            new_id = len(self.vocab)
+            self.merges[most_freq_pair] = new_token_id
+            self.vocab[new_token_id]    = self.vocab[most_freq_pair[0]] + self.vocab[most_freq_pair[1]]
 
-            self.merges[max_pair] = new_id
-            self.vocab[new_id] = self.vocab[max_pair[0]] + self.vocab[max_pair[1]]
+            affected_chunks = list(pair_to_chunks[most_freq_pair])
 
-            new_bytes = []
-            i = 0
-            while i < len(bytes_text):
-                if i < len(bytes_text) - 1 and bytes_text[i] == max_pair[0] and bytes_text[i+1] == max_pair[1]:
-                    new_bytes.append(new_id)
-                    i += 2
-                else:
-                    new_bytes.append(bytes_text[i])
-                    i += 1
-            bytes_text = new_bytes
+            for chunk in affected_chunks:
+                weight = unique_chunks[chunk]
+                
+                for pair in zip(chunk, chunk[1:]):
+                    full_pair_freqs[pair] -= weight
+                
+                    if full_pair_freqs[pair] == 0:
+                        del full_pair_freqs[pair]
+                
+                    pair_to_chunks[pair].discard(chunk)
+                
+                merged = tuple(merge_pair(seq=chunk, pair=most_freq_pair, replacement=new_token_id))
+                
+                for pair in zip(merged, merged[1:]):
+                    full_pair_freqs[pair] = full_pair_freqs.get(pair, 0) + weight
+                    pair_to_chunks[pair].add(merged)
 
-    def encode(self, text):
-        bytes_text = list(text.encode('utf-8'))
+                del unique_chunks[chunk]
+                
+                unique_chunks[merged] = unique_chunks.get(merged, 0) + weight
+            
 
-        for merge, new_id in self.merges.items():
-            new_bytes = []
-            i = 0
+    def encode(self, text: str) -> list:
+        chunks = [list(chunk.encode('utf-8')) for chunk in re.findall(SPLIT_PATTERN, text)]
+        encoded_chunks = []
+        
+        for chunk in chunks:
+            key = tuple(chunk)
+            cached = self._encode_cache.get(key)
+            if cached is None:
+                while True:
+                    applicable_pairs = set()
+                
+                    for pair in zip(chunk, chunk[1:]):
+                        if pair in self.merges:
+                            applicable_pairs.add(pair)
+                    
+                    if not applicable_pairs:
+                        break
+                    
+                    applicable_merge = min(applicable_pairs, key=lambda merge: self.merges[merge])
 
-            while i < len(bytes_text):
-                if i < len(bytes_text) - 1 and bytes_text[i] == merge[0] and bytes_text[i+1] == merge[1]:
-                    new_bytes.append(new_id)
-                    i += 2
-                else:
-                    new_bytes.append(bytes_text[i])
-                    i += 1
-            bytes_text = new_bytes
-
-        return bytes_text
+                    chunk = merge_pair(seq=chunk, pair=applicable_merge, replacement=self.merges[applicable_merge])
+                cached = tuple(chunk)
+                self._encode_cache[key] = cached
+            encoded_chunks.append(cached)
+        
+        return [token for encoded_chunk in encoded_chunks for token in encoded_chunk]
 
 
-    def decode(self, ids):
-        bytes_text = b"".join(self.vocab[id] for id in ids)
-        return bytes_text.decode('utf-8')
 
-    def save(self, path):
-        merges = {f"{p0},{p1}": new_id for (p0, p1), new_id in self.merges.items()}
+    def decode(self, tokens:list) -> str:
+        bytes_text = b"".join(self.vocab[token] for token in tokens)
+        text = bytes_text.decode('utf-8', errors='replace')
 
-        with open(path, 'w') as f:
-            json.dump(merges, f)
+        return text
 
-    def load(self, path):
-        with open(path, 'r') as f:
-            merges = json.load(f)
+    # def save(self, path):
+    #     merges = {f"{p0},{p1}": new_id for (p0, p1), new_id in self.merges.items()}
 
-        self.vocab = {i: bytes([i]) for i in range(256)}
+    #     with open(path, 'w') as f:
+    #         json.dump(merges, f)
 
-        for merge, rule in merges.items():
-            key = merge
-            p0, p1 = key.split(',')
-            pair = (int(p0), int(p1))
+    # def load(self, path):
+    #     with open(path, 'r') as f:
+    #         merges = json.load(f)
 
-            self.vocab[rule] = self.vocab[pair[0]] + self.vocab[pair[1]]
-            self.merges[pair] = rule
+    #     self.vocab = {i: bytes([i]) for i in range(256)}
 
-    def encode_chunks(self, text, chunk_size=10000):
-        results = []
-        for i in range(0, len(text), chunk_size):
-            chunk = text[i:i + chunk_size]
-            results.extend(self.encode(chunk))
-        return results
+    #     for merge, rule in merges.items():
+    #         key = merge
+    #         p0, p1 = key.split(',')
+    #         pair = (int(p0), int(p1))
+
+    #         self.vocab[rule] = self.vocab[pair[0]] + self.vocab[pair[1]]
+    #         self.merges[pair] = rule

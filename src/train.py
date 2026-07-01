@@ -22,7 +22,6 @@ import math
 import json
 from dataclasses import dataclass
 
-
 @dataclass
 class TrainConfig:
     """
@@ -42,10 +41,6 @@ class TrainConfig:
     batch_size: int = 4096
     log_path: str = None
     max_norm: float = 1.0
-    beta_1: float = 0.9
-    beta_2: float = 0.99
-    epsilon: float = 1e-8
-    decay_coeff: float = 0.1
 
 def log_run_config(log_path, run_name, model, config):
     """
@@ -66,7 +61,7 @@ def log_run_config(log_path, run_name, model, config):
         f.write(json.dumps(record) + "\n")
 
 
-def train_model(SEED, model, train, dev, config, run_name, device):
+def train_model(SEED, model, optimizer,train, dev, config, run_name, device, pause_time):
     """
     Train `model` on `train` for config.iterations steps via SGD with a
     cosine LR schedule, evaluating on `dev` every config.log_interval steps.
@@ -109,16 +104,6 @@ def train_model(SEED, model, train, dev, config, run_name, device):
 
     max_norm = config.max_norm
 
-    first_moments = {id(parameter): torch.zeros_like(parameter) for parameter in parameters}
-    second_moments = {id(parameter): torch.zeros_like(parameter) for parameter in parameters}
-
-    t = 1
-
-    beta1 = config.beta_1
-    beta2 = config.beta_2
-    eps = config.epsilon
-    decay_coeff = config.decay_coeff
-
     warmup_steps = config.warmup_steps
     iterations = config.iterations
     batch_size = config.batch_size
@@ -154,25 +139,14 @@ def train_model(SEED, model, train, dev, config, run_name, device):
         for parameter in parameters:
             parameter.grad = parameter.grad * clip_coeff
 
-            first_moment = beta1 * first_moments[id(parameter)] + (1 - beta1) * parameter.grad
-            first_moments[id(parameter)] = first_moment
-
-            second_moment = beta2 * second_moments[id(parameter)] + (1 - beta2) * (parameter.grad ** 2)
-            second_moments[id(parameter)] = second_moment
-
-            first_moment_hat = first_moment / (1 - beta1 ** t)
-            second_moment_hat = second_moment / (1 - beta2 ** t)
-
-            parameter.data -= lr * first_moment_hat / (torch.sqrt(second_moment_hat) + eps)
-
-            if parameter.ndim >= 2:
-                parameter.data -= lr * decay_coeff * parameter.data
-        t += 1
+        optimizer(lr)
 
         lr_per_itrn.append(lr)
         loss_per_itrn[itrn-1] = loss.detach()
 
         if itrn % config.log_interval == 0:
+            time.sleep(pause_time*60)
+
             model.eval()
 
             dev_idx = torch.randint(0, dev_inputs_shape, (batch_size,), device=device, generator=dev_batch_generator)
@@ -189,7 +163,12 @@ def train_model(SEED, model, train, dev, config, run_name, device):
 
             print(f"  step {itrn:>7,} | dev {dev_loss_val:.4f} vs train {trn_loss_val:.4f}| lr {lr:.4f}")
 
-            ud.append([((lr * p.grad).std() / p.data.std()).log10().item() for p in parameters])
+            magnitudes = optimizer.step_magnitudes(lr)
+
+            ud.append([
+                ((magnitude.std()) / parameter.data.std()).log10().item()
+                for magnitude, parameter in zip(magnitudes, parameters)
+            ])
 
             if 'xpu' in device:
                 torch.xpu.synchronize()

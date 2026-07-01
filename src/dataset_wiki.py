@@ -7,15 +7,13 @@ class WikiDataset:
     def __init__(self, inputs, targets):
         self.inputs = inputs
         self.targets = targets
-        self.pad_idx = -1  # no padding in WikiText-2
-
+        self.pad_idx = -1  
 
 def make_wiki_dataset(
         data_dir,
         device,
         context_size,
-        vocab_size,
-        seed
+        vocab_size
 ):
     train = open(os.path.join(data_dir, "wiki.train.raw"), "r", encoding="utf-8").read()
     dev = open(os.path.join(data_dir, "wiki.valid.raw"), "r", encoding="utf-8").read()
@@ -25,13 +23,7 @@ def make_wiki_dataset(
 
     BPE = ByteBPE()
 
-    bpe_path = os.path.join(data_dir, "bpe.json")
-
-    if os.path.exists(bpe_path):
-        BPE.load(bpe_path)
-    else:
-        BPE.train(text=train, vocab_size=vocab_size)
-        BPE.save(bpe_path)
+    BPE.train(text=train, vocab_size=vocab_size)
 
     def make_chunks(ids, context_size):
         for i in range(0, len(ids), context_size):
@@ -41,7 +33,7 @@ def make_wiki_dataset(
 
     encoded_split = {}
     for name, text in split.items():
-        ids = BPE.encode_chunks(text)
+        ids = BPE.encode(text)
         chunks = list(make_chunks(ids, context_size))
 
         inputs  = [chunk[:-1] for chunk in chunks]
